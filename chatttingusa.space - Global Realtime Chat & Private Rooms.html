@@ -1,0 +1,2145 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950 text-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="google-site-verification" content="xlB3-m60gOJzd5w4f9sBQ4OyD_t_0IZczqunQb-W58I" />
+  <title>chatttingusa.space - Global Realtime Chat & Private Rooms</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            anime: {
+              pink: '#f43f5e',
+              purple: '#a855f7',
+              cyan: '#06b6d4',
+              neon: '#22d3ee'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+    @keyframes radar-pulse {
+      0% { transform: scale(0.85); opacity: 0.9; }
+      50% { transform: scale(1.25); opacity: 0.25; }
+      100% { transform: scale(0.85); opacity: 0.9; }
+    }
+    .radar-anim { animation: radar-pulse 2s infinite ease-in-out; }
+
+    /* Glassmorphism Styling */
+    .glass-card {
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(168, 85, 247, 0.4);
+      box-shadow: 0 0 25px rgba(168, 85, 247, 0.15);
+    }
+
+    /* Screen Shake for Explosion */
+    @keyframes screen-shake {
+      0%, 100% { transform: translate(0, 0); }
+      10%, 30%, 50%, 70%, 90% { transform: translate(-6px, 4px); }
+      20%, 40%, 60%, 80% { transform: translate(6px, -4px); }
+    }
+    .animate-shake { animation: screen-shake 0.4s ease-in-out; }
+
+    /* Quick 250ms Door Panel Transitions */
+    .door-panel {
+      transition: transform 0.25s cubic-bezier(0.7, 0, 0.3, 1);
+    }
+    .door-closed .door-left { transform: translateX(0); }
+    .door-closed .door-right { transform: translateX(0); }
+
+    .door-open .door-left { transform: translateX(-100%); }
+    .door-open .door-right { transform: translateX(100%); }
+  </style>
+</head>
+<body class="h-screen h-[100dvh] w-screen flex flex-col font-sans antialiased overflow-hidden selection:bg-fuchsia-500 selection:text-white bg-slate-950">
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="fixed top-4 right-4 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+  <!-- Quick Door Overlay Effect (Always pointer-events-none & open during chat) -->
+  <div id="doorOverlay" class="fixed inset-0 z-40 pointer-events-none flex overflow-hidden door-open">
+    <div id="doorLeft" class="door-panel door-left w-1/2 h-full bg-slate-900 border-r-4 border-fuchsia-500/80 flex items-center justify-end pr-6 shadow-[10px_0_30px_rgba(0,0,0,0.8)] relative">
+      <div class="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-800 opacity-90"></div>
+      <div class="relative z-10 w-5 h-28 rounded-full bg-gradient-to-b from-amber-300 via-amber-500 to-amber-700 border border-amber-200 shadow-[0_0_15px_#f59e0b] flex items-center justify-center">
+        <div class="w-3 h-3 rounded-full bg-amber-900 shadow-inner"></div>
+      </div>
+    </div>
+
+    <div id="doorRight" class="door-panel door-right w-1/2 h-full bg-slate-900 border-l-4 border-fuchsia-500/80 flex items-center justify-start pl-6 shadow-[-10px_0_30px_rgba(0,0,0,0.8)] relative">
+      <div class="absolute inset-0 bg-gradient-to-l from-slate-950 via-slate-900 to-slate-800 opacity-90"></div>
+      <div class="relative z-10 w-5 h-28 rounded-full bg-gradient-to-b from-amber-300 via-amber-500 to-amber-700 border border-amber-200 shadow-[0_0_15px_#f59e0b] flex items-center justify-center">
+        <div class="w-3 h-3 rounded-full bg-amber-900 shadow-inner"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Canvas for Shatter Particle Blast Effect -->
+  <canvas id="blastCanvas" class="fixed inset-0 z-50 pointer-events-none hidden"></canvas>
+
+  <!-- Fine Header Bar -->
+  <header id="mainHeader" class="h-16 border-b border-purple-900/60 bg-slate-900/95 backdrop-blur-md px-3 md:px-6 flex items-center justify-between z-20 shrink-0">
+    <div class="flex items-center space-x-3">
+      <!-- 3D Space Node Logo Emblem for chatttingusa.space -->
+      <div class="relative group cursor-pointer flex items-center space-x-3">
+        <div class="relative w-11 h-11 flex items-center justify-center">
+          <div class="absolute -inset-0.5 rounded-2xl bg-gradient-to-tr from-fuchsia-600 via-indigo-600 to-cyan-400 opacity-90 blur-sm group-hover:opacity-100 transition duration-300 animate-pulse"></div>
+          <div class="relative w-11 h-11 rounded-2xl bg-slate-950 border border-fuchsia-400/60 flex items-center justify-center overflow-hidden shadow-xl shadow-fuchsia-950/90">
+            <svg class="w-8 h-8" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="cosmicGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#F43F5E" />
+                  <stop offset="50%" stop-color="#A855F7" />
+                  <stop offset="100%" stop-color="#06B6D4" />
+                </linearGradient>
+                <linearGradient id="cosmicGrad2" x1="100%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#38BDF8" />
+                  <stop offset="100%" stop-color="#818CF8" />
+                </linearGradient>
+                <filter id="cosmicGlow" x="-30%" y="-30%" width="160%" height="160%">
+                  <feGaussianBlur stdDeviation="4" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+              </defs>
+              <ellipse cx="50" cy="50" rx="44" ry="16" stroke="url(#cosmicGrad1)" stroke-width="3.5" transform="rotate(-30 50 50)" filter="url(#cosmicGlow)" />
+              <ellipse cx="50" cy="50" rx="44" ry="16" stroke="url(#cosmicGrad2)" stroke-width="2.5" transform="rotate(35 50 50)" opacity="0.85" />
+              <path d="M 24,28 C 24,18 76,18 76,28 L 76,54 C 76,64 64,64 54,64 L 42,76 L 42,64 C 24,64 24,54 24,44 Z" fill="url(#cosmicGrad1)" filter="url(#cosmicGlow)" />
+              <circle cx="50" cy="42" r="14" fill="#1E1B4B" opacity="0.4" />
+              <circle cx="50" cy="42" r="8" fill="#FFFFFF" />
+              <path d="M 38,42 A 12,12 0 0,1 62,42" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" fill="none" opacity="0.9" />
+              <path d="M 33,42 A 17,17 0 0,1 67,42" stroke="url(#cosmicGrad2)" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.7" />
+            </svg>
+          </div>
+        </div>
+
+        <div>
+          <div class="flex items-center space-x-2">
+            <h1 class="font-black text-xl md:text-2xl leading-none tracking-tight bg-gradient-to-r from-fuchsia-400 via-cyan-300 to-indigo-300 bg-clip-text text-transparent drop-shadow-[0_0_12px_rgba(217,70,239,0.4)]">
+              chattingusa<span class="text-cyan-400 font-extrabold text-base md:text-lg">.space</span>
+            </h1>
+            <span class="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-gradient-to-r from-fuchsia-600/30 to-cyan-500/30 text-cyan-300 border border-cyan-400/40 shadow-[0_0_10px_rgba(34,211,238,0.3)] flex items-center space-x-1">
+              <span>🌌</span>
+              <span>LIVE</span>
+            </span>
+          </div>
+          <p class="text-[11px] text-slate-400 hidden sm:block font-medium mt-0.5">Global Realtime Chat & Private Invitation Rooms</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Controls -->
+    <div class="flex items-center space-x-2 sm:space-x-3">
+      <!-- Saved Rooms Drawer Button -->
+      <button id="btnOpenRoomsDrawer" class="px-2.5 py-1.5 rounded-xl bg-fuchsia-600/20 hover:bg-fuchsia-600 text-fuchsia-300 hover:text-white border border-fuchsia-500/40 font-bold text-xs transition flex items-center space-x-1.5 shadow-md">
+        <span>📂 My Rooms</span>
+        <span id="roomsBadgeCount" class="bg-fuchsia-500 text-white px-1.5 py-0.2 rounded-full text-[10px] font-black">0</span>
+      </button>
+
+      <!-- Active Profile Badge -->
+      <div id="headerProfilePill" class="hidden items-center space-x-1.5 px-3 py-1 rounded-full bg-slate-800 border border-slate-700 text-xs">
+        <span id="userAvatarIcon" class="text-sm">🌸</span>
+        <span id="userNameLabel" class="font-bold text-slate-200 truncate max-w-[90px]">User</span>
+        <span id="userCountryFlag" class="text-xs">🇮🇳</span>
+        <button id="btnEditProfile" class="ml-1 text-[10px] text-cyan-400 hover:underline">Edit</button>
+      </div>
+
+      <!-- Connection Status -->
+      <div id="statusBadge" class="flex items-center space-x-2 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span id="statusText" class="hidden sm:inline">Live Active</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Workspace Container -->
+  <div class="flex-1 w-full h-full flex flex-col overflow-hidden relative bg-slate-950" id="mainAppWrapper">
+
+    <!-- Screen 1: Onboarding / Scrollable Profile Setup Drawer -->
+    <div id="screenOnboarding" class="w-full h-full flex-1 flex flex-col items-center justify-center p-4 sm:p-6 z-10 overflow-y-auto bg-slate-950">
+      <div class="max-w-md w-full glass-card p-6 md:p-8 rounded-3xl shadow-2xl space-y-5 text-center my-auto">
+        
+        <div class="space-y-3 text-center">
+          <!-- 3D Space Node Hero Logo Emblem -->
+          <div class="relative w-22 h-22 mx-auto flex items-center justify-center group cursor-pointer">
+            <div class="absolute -inset-1.5 rounded-3xl bg-gradient-to-tr from-fuchsia-600 via-indigo-600 to-cyan-400 opacity-90 blur-md animate-pulse"></div>
+            <div class="relative w-22 h-22 rounded-3xl bg-slate-950 border border-fuchsia-400/60 flex items-center justify-center overflow-hidden shadow-2xl shadow-fuchsia-950">
+              <svg class="w-13 h-13" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <ellipse cx="50" cy="50" rx="44" ry="16" stroke="url(#cosmicGrad1)" stroke-width="3.5" transform="rotate(-30 50 50)" filter="url(#cosmicGlow)" />
+                <ellipse cx="50" cy="50" rx="44" ry="16" stroke="url(#cosmicGrad2)" stroke-width="2.5" transform="rotate(35 50 50)" opacity="0.85" />
+                <path d="M 24,28 C 24,18 76,18 76,28 L 76,54 C 76,64 64,64 54,64 L 42,76 L 42,64 C 24,64 24,54 24,44 Z" fill="url(#cosmicGrad1)" filter="url(#cosmicGlow)" />
+                <circle cx="50" cy="42" r="14" fill="#1E1B4B" opacity="0.4" />
+                <circle cx="50" cy="42" r="8" fill="#FFFFFF" />
+                <path d="M 38,42 A 12,12 0 0,1 62,42" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" fill="none" opacity="0.9" />
+                <path d="M 33,42 A 17,17 0 0,1 67,42" stroke="url(#cosmicGrad2)" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.7" />
+              </svg>
+            </div>
+          </div>
+          <h2 class="text-3xl font-black tracking-tight text-white bg-gradient-to-r from-fuchsia-400 via-cyan-300 to-indigo-300 bg-clip-text text-transparent">chatttingusa.space</h2>
+          <p class="text-xs text-slate-400 font-medium">Your global space to connect with strangers & friends in real time.</p>
+        </div>
+
+        <div class="space-y-4 text-left max-h-[60vh] overflow-y-auto pr-1">
+          <!-- Username Input -->
+          <div>
+            <label class="block text-xs font-bold text-slate-300 mb-1">Your Nickname / Username:</label>
+            <input type="text" id="inputUsername" placeholder="e.g. Alex_USA" class="w-full bg-slate-950 border border-purple-900/60 rounded-xl px-4 py-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-fuchsia-500 transition font-medium">
+          </div>
+
+          <!-- Expanded Country Select (30+ Countries) -->
+          <div>
+            <label class="block text-xs font-bold text-slate-300 mb-1">Select Your Country &amp; Language:</label>
+            <select id="selectCountry" class="w-full bg-slate-950 border border-purple-900/60 rounded-xl px-4 py-3 text-sm text-slate-100 focus:outline-none focus:border-fuchsia-500 transition font-medium">
+              <!-- Dynamically populated 30+ Countries -->
+            </select>
+          </div>
+
+          <!-- Avatar Selector -->
+          <div>
+            <label class="block text-xs font-bold text-slate-300 mb-1">Choose Avatar:</label>
+            <div id="avatarGrid" class="grid grid-cols-6 gap-2 p-2 bg-slate-950 border border-purple-900/60 rounded-xl text-2xl text-center">
+              <button class="avatar-btn p-2 rounded-lg bg-fuchsia-600 text-white shadow" data-avatar="🌸">🌸</button>
+              <button class="avatar-btn p-2 rounded-lg hover:bg-slate-800" data-avatar="⚡">⚡</button>
+              <button class="avatar-btn p-2 rounded-lg hover:bg-slate-800" data-avatar="🦊">🦊</button>
+              <button class="avatar-btn p-2 rounded-lg hover:bg-slate-800" data-avatar="🚀">🚀</button>
+              <button class="avatar-btn p-2 rounded-lg hover:bg-slate-800" data-avatar="🤖">🤖</button>
+              <button class="avatar-btn p-2 rounded-lg hover:bg-slate-800" data-avatar="🐯">🐯</button>
+            </div>
+          </div>
+        </div>
+
+        <button id="btnEnterApp" class="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-fuchsia-600 via-purple-600 to-cyan-500 hover:from-fuchsia-500 hover:to-cyan-400 text-white font-extrabold text-base shadow-xl shadow-fuchsia-500/25 transition transform active:scale-98 flex items-center justify-center space-x-2">
+          <span>Enter chatttingusa.space 🌌</span>
+          <span>➔</span>
+        </button>
+
+      </div>
+    </div>
+
+    <!-- Screen 2: Dashboard Hub -->
+    <div id="screenDashboard" class="hidden w-full h-full flex-1 flex flex-col z-10 overflow-hidden bg-slate-950">
+      
+      <!-- Navigation Tabs -->
+      <div class="bg-slate-900 border-b border-purple-900/40 px-2 md:px-4 flex items-center justify-center space-x-2 md:space-x-4 shrink-0 pt-2">
+        <button id="tabMatch" class="px-4 py-3 border-b-2 border-fuchsia-400 text-fuchsia-400 font-bold text-xs md:text-sm transition flex items-center space-x-1.5 whitespace-nowrap">
+          <span>🔍 1-on-1 Stranger Match</span>
+        </button>
+        <button id="tabCountry" class="px-4 py-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 font-bold text-xs md:text-sm transition flex items-center space-x-1.5 whitespace-nowrap">
+          <span>🌍 See Users By Country</span>
+        </button>
+        <button id="tabGlobalLounge" class="px-4 py-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 font-bold text-xs md:text-sm transition flex items-center space-x-1.5 whitespace-nowrap">
+          <span>🌐 Global Lounge</span>
+        </button>
+      </div>
+
+      <!-- Tab Content Area -->
+      <div class="flex-1 overflow-y-auto p-4 md:p-6 relative">
+
+        <!-- Tab 1: Matcher & Private Room Launcher -->
+        <div id="contentMatch" class="w-full max-w-5xl mx-auto space-y-6 py-4 px-2 md:px-6">
+          
+          <!-- Private Room Link Card -->
+          <div class="p-5 rounded-2xl bg-gradient-to-r from-purple-950/80 via-indigo-950/80 to-slate-900 border border-purple-500/50 flex items-center justify-between shadow-xl glass-card">
+            <div class="space-y-1">
+              <h3 class="font-bold text-sm text-white flex items-center space-x-2">
+                <span>🔗 Private Invitation Room</span>
+                <span class="text-[10px] bg-fuchsia-500/20 text-fuchsia-300 px-2 py-0.5 rounded-full border border-fuchsia-500/30">Creator Deletable</span>
+              </h3>
+              <p class="text-xs text-slate-300">Create a room link for friends. Creator can shatter and delete room anytime!</p>
+            </div>
+            <button id="btnCreatePrivateRoom" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 text-white font-bold text-xs shadow-md transition whitespace-nowrap">
+              Create Room
+            </button>
+          </div>
+
+          <!-- Real Matcher Card -->
+          <div class="glass-card p-8 rounded-3xl shadow-2xl space-y-6 text-center">
+            <div class="w-16 h-16 mx-auto rounded-2xl bg-fuchsia-500/10 border border-fuchsia-500/30 flex items-center justify-center text-3xl text-fuchsia-400 shadow-inner">
+              ⚡
+            </div>
+            <div class="space-y-1">
+              <h2 class="text-2xl font-black text-white">Find Real Online Stranger</h2>
+              <p class="text-xs text-slate-400">100% Real Match System • Filter by Country or Topic</p>
+            </div>
+
+            <!-- Interest Topic Selector -->
+            <div class="space-y-2 text-left">
+              <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider">Select Chat Topic:</label>
+              <div class="flex flex-wrap gap-2" id="interestTagsContainer">
+                <button class="tag-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-fuchsia-600 text-white border border-fuchsia-400 shadow" data-tag="Random">🎲 Random</button>
+                <button class="tag-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700 hover:border-slate-500" data-tag="Anime">🌸 Anime</button>
+                <button class="tag-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700 hover:border-slate-500" data-tag="Gaming">🎮 Gaming</button>
+                <button class="tag-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700 hover:border-slate-500" data-tag="Coding">💻 Coding</button>
+                <button class="tag-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700 hover:border-slate-500" data-tag="Music">🎵 Music</button>
+              </div>
+            </div>
+
+            <!-- Start Match Action Button -->
+            <button id="btnStartFindStranger" class="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-fuchsia-600 via-purple-600 to-cyan-500 hover:from-fuchsia-500 hover:to-cyan-400 text-white font-black text-lg shadow-xl shadow-fuchsia-500/25 transition transform active:scale-98">
+              🚀 Start Real Stranger Match
+            </button>
+          </div>
+        </div>
+
+                            <!-- Friendship Thought & Small Bottom About Link -->
+          <div class="mt-8 p-6 rounded-3xl bg-slate-900/90 border border-purple-900/50 space-y-3 text-center glass-card shadow-xl">
+            <p class="text-fuchsia-300 font-serif italic text-xs sm:text-sm leading-relaxed">
+              "Friendship is the bridge across countries and languages. Connect, share real moments, and meet genuine people worldwide on chatttingusa.space." 🌌
+            </p>
+          </div>
+
+          <div class="pt-4 pb-6 text-center">
+            <button id="btnOpenKnowUs" type="button" class="text-[11px] font-semibold text-slate-400 hover:text-fuchsia-300 underline transition cursor-pointer">
+              about us & credits
+            </button>
+          </div>
+        </div>
+
+        <!-- Tab 2: Country Explorer Grid (30+ Countries) -->
+        <div id="contentCountry" class="hidden w-full max-w-7xl mx-auto space-y-6 px-2 md:px-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-xl font-bold text-white">Search Stranger by Country</h2>
+              <p class="text-xs text-slate-400">Strict matching: Connects strictly with strangers in that country!</p>
+            </div>
+            <span class="text-xs font-bold text-fuchsia-400 px-3 py-1 rounded-full bg-fuchsia-500/10 border border-fuchsia-500/30">30+ Countries</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" id="countryGridContainer">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+
+        <!-- Tab 3: Global Lounge Chatroom -->
+        <div id="contentGlobalLounge" class="hidden max-w-3xl mx-auto h-[75vh] flex flex-col glass-card rounded-3xl overflow-hidden shadow-2xl">
+          <div class="p-4 bg-slate-900 border-b border-slate-800 flex items-center justify-between shrink-0">
+            <div class="flex items-center space-x-2">
+              <span class="text-xl">🌐</span>
+              <div>
+                <h3 class="font-bold text-sm text-white">Public Global Chatroom</h3>
+                <p class="text-[11px] text-slate-400">Broadcast messages live to all online users around the world</p>
+              </div>
+            </div>
+            <span class="text-[10px] font-bold text-emerald-400 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">Live Broadcast</span>
+          </div>
+
+          <div id="globalMessagesBox" class="flex-1 p-4 overflow-y-auto space-y-3">
+            <div class="text-center my-2">
+              <span class="px-3 py-1 rounded-full bg-slate-900 text-slate-400 text-xs border border-slate-800">Welcome to chatttingusa.space Lounge!</span>
+            </div>
+          </div>
+
+          <div class="p-3 bg-slate-900 border-t border-slate-800 shrink-0">
+            <form id="globalChatForm" class="flex items-center space-x-2">
+              <input type="text" id="globalInput" placeholder="Send a message to everyone..." autocomplete="off" class="flex-1 bg-slate-950 text-slate-100 placeholder-slate-500 text-sm px-4 py-2.5 rounded-xl border border-purple-900/60 focus:outline-none focus:border-fuchsia-500">
+              <button type="submit" class="px-5 py-2.5 rounded-xl bg-fuchsia-600 hover:bg-fuchsia-500 text-white font-bold text-xs shadow">Send</button>
+            </form>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Screen 3: Searching Radar Overlay -->
+    <div id="screenSearching" class="hidden w-full h-full flex-1 flex flex-col items-center justify-center p-4 sm:p-6 z-10 text-center bg-slate-950">
+      <div class="max-w-md w-full glass-card p-8 rounded-3xl shadow-2xl space-y-8 flex flex-col items-center">
+        
+        <div class="relative w-36 h-36 flex items-center justify-center">
+          <div class="absolute inset-0 rounded-full bg-fuchsia-500/20 radar-anim"></div>
+          <div class="absolute inset-3 rounded-full bg-fuchsia-500/10 border border-fuchsia-500/30"></div>
+          <div class="w-20 h-20 rounded-full bg-gradient-to-tr from-fuchsia-600 to-cyan-500 flex items-center justify-center text-4xl shadow-xl shadow-fuchsia-500/50 text-white">
+            🔍
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <h3 class="text-xl font-extrabold text-white">Searching Real Online Stranger...</h3>
+          <p id="searchStatusText" class="text-xs text-slate-400">chatttingusa.space realtime matching in progress.</p>
+          <div class="flex items-center justify-center space-x-2 text-[11px] font-bold text-fuchsia-400">
+            <span id="searchTopicBadge" class="bg-fuchsia-950/80 border border-fuchsia-800 px-3 py-1 rounded-full">Topic: Random</span>
+            <span id="searchCountryBadge" class="bg-fuchsia-950/80 border border-fuchsia-800 px-3 py-1 rounded-full">Country: Any 🌐</span>
+          </div>
+        </div>
+
+        <button id="btnCancelSearch" class="py-2.5 px-6 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs border border-slate-700 transition">
+          Cancel Search &amp; Go Home
+        </button>
+      </div>
+    </div>
+
+    <!-- Screen 4: SPACIOUS CHAT AREA -->
+    <div id="screenChat" class="hidden absolute inset-0 w-full h-full flex flex-col bg-slate-950 z-30 overflow-hidden">
+      
+      <!-- Top Chat Header (100% Clean Mobile Responsive Header) -->
+      <div class="h-14 sm:h-16 py-2 px-2.5 sm:px-5 bg-slate-900/95 backdrop-blur-md border-b border-purple-900/40 flex items-center justify-between shrink-0 shadow-lg z-20 gap-2 w-full">
+        
+        <!-- Left Side: Home Button, Avatar, Title & Online Dot -->
+        <div class="flex items-center space-x-2 min-w-0 flex-1 overflow-hidden">
+          <button id="btnBackFromChat" class="px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center shrink-0 cursor-pointer text-xs" title="Back to Dashboard">
+            <span class="font-bold text-sm">←</span>
+            <span class="hidden sm:inline ml-1 font-semibold">Home</span>
+          </button>
+
+          <div id="chatStrangerAvatar" class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-fuchsia-600 via-purple-600 to-cyan-500 flex items-center justify-center text-white text-base sm:text-lg font-bold shadow shrink-0 border border-purple-400/30">
+            🌸
+          </div>
+
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center space-x-1.5 truncate">
+              <span id="chatStrangerTitle" class="font-bold text-xs sm:text-sm text-white truncate max-w-[120px] sm:max-w-[220px]">Stranger</span>
+              <span id="chatStrangerFlag" class="text-xs shrink-0">🇮🇳</span>
+              <span class="relative flex h-2 w-2 shrink-0" title="Live Online">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 shadow-[0_0_6px_#10B981]"></span>
+              </span>
+            </div>
+            <div class="truncate">
+              <p id="chatStrangerStatus" class="text-[10px] sm:text-[11px] text-fuchsia-400 font-medium truncate">Live Realtime Session</p>
+              <p id="chatActiveUsersList" class="text-[10px] sm:text-[11px] text-emerald-400 font-semibold truncate hidden">🟢 Active (1)</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Side: Clean Compact Buttons on Mobile -->
+        <div class="flex items-center space-x-1 sm:space-x-2 shrink-0">
+          <button id="btnToggleAutoTranslate" class="p-2 sm:px-2.5 sm:py-2 rounded-xl bg-purple-900/80 hover:bg-purple-800 border border-purple-500/40 text-[10px] text-fuchsia-300 font-bold flex items-center space-x-1 transition cursor-pointer" title="Toggle Auto-Translate">
+            <span>🌐</span>
+            <span id="txtAutoTranslateStatus" class="hidden sm:inline">Translate: ON</span>
+          </button>
+
+          <button id="btnNextStranger" class="px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 text-white font-bold text-xs shadow transition flex items-center cursor-pointer">
+            <span>⏭️</span>
+            <span class="hidden sm:inline ml-1">Next</span>
+          </button>
+
+          <button id="btnCopyInRoomLink" class="hidden px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow transition flex items-center cursor-pointer">
+            <span>🔗</span>
+            <span class="hidden sm:inline ml-1">Invite</span>
+          </button>
+
+          <button id="btnDeleteRoom" class="hidden px-2 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow transition flex items-center cursor-pointer">
+            <span>💥</span>
+            <span class="hidden sm:inline ml-1">Delete</span>
+          </button>
+
+          <button id="btnLeaveChat" class="px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs transition cursor-pointer">
+            <span>Leave</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Disconnected Banner Action Prompt -->
+      <div id="disconnectedPromptBanner" class="hidden bg-rose-950/90 border-b border-rose-800/80 px-4 py-2.5 flex items-center justify-between text-xs text-rose-200">
+        <span class="font-bold flex items-center space-x-1.5">
+          <span>⚠️</span>
+          <span>Stranger has disconnected from the chat.</span>
+        </span>
+        <div class="flex items-center space-x-2">
+          <button id="btnAutoFindNext" class="px-3 py-1 rounded-xl bg-fuchsia-600 hover:bg-fuchsia-500 text-white font-bold text-[11px] shadow">Find Next Stranger</button>
+          <button id="btnCancelGoHome" class="px-3 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-[11px]">Go Home</button>
+        </div>
+      </div>
+
+      <!-- SPACIOUS MESSAGE SCROLL BOX -->
+      <div id="chatMessagesBox" class="flex-1 p-4 md:p-6 overflow-y-auto space-y-4 min-h-[300px] leading-relaxed">
+        <!-- Chat bubbles rendered here -->
+      </div>
+
+      <!-- Real-Time Typing Indicator Bar -->
+      <div id="typingIndicatorBar" class="hidden px-4 py-1.5 bg-slate-900 border-t border-purple-900/40 flex items-center space-x-2 text-xs text-fuchsia-400 shrink-0">
+        <span class="animate-pulse text-sm">✍️</span>
+        <span id="typingIndicatorText" class="font-medium text-slate-300">Someone is typing...</span>
+      </div>
+
+      <!-- Quick Reaction Chips -->
+      <div class="px-4 py-2 bg-slate-900/80 border-t border-slate-800 flex items-center space-x-2 overflow-x-auto text-xs shrink-0 scrollbar-none">
+        <span class="text-slate-500 text-[11px] font-semibold whitespace-nowrap">Quick:</span>
+        <button class="quick-chip px-3 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 whitespace-nowrap">Hello! How are you?</button>
+        <button class="quick-chip px-3 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 whitespace-nowrap">Where are you from?</button>
+        <button class="quick-chip px-3 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 whitespace-nowrap">What are your hobbies?</button>
+        <button class="quick-chip px-3 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 whitespace-nowrap">🌸</button>
+        <button class="quick-chip px-3 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 whitespace-nowrap">🔥</button>
+        <button class="quick-chip px-3 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 whitespace-nowrap">❤️</button>
+      </div>
+
+      <!-- RESPONSIVE INPUT BAR -->
+      <div class="p-3 md:p-4 bg-slate-900 border-t border-slate-800 shrink-0 sticky bottom-0 z-30 shadow-2xl">
+        <form id="chatForm" class="flex items-center space-x-2 w-full max-w-6xl mx-auto">
+          <input type="file" id="imageInput" accept="image/*" class="hidden">
+          <button type="button" id="btnAttachImage" class="p-3.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition shrink-0 flex items-center justify-center text-lg shadow-sm" title="Send P2P Direct Image">
+            📷
+          </button>
+          <input type="text" id="chatInput" placeholder="Type a message..." autocomplete="off" class="flex-1 bg-slate-950 text-slate-100 placeholder-slate-500 text-sm md:text-base px-4 py-3.5 rounded-2xl border border-purple-900/60 focus:outline-none focus:border-fuchsia-500 transition shadow-inner">
+          <button type="submit" id="btnSend" class="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-fuchsia-600 via-purple-600 to-cyan-500 hover:from-fuchsia-500 hover:to-cyan-400 text-white font-extrabold text-sm md:text-base shadow-xl transition flex items-center justify-center space-x-1.5 shrink-0 cursor-pointer">
+            <span>Send</span>
+            <span>🚀</span>
+          </button>
+        </form>
+      </div>
+
+    </div>
+
+    <!-- Screen 5: ANIME DESTROYED ROOM / RUINS SCREEN -->
+    <div id="screenRoomDestroyed" class="hidden w-full h-full flex-1 flex flex-col items-center justify-center p-4 sm:p-6 z-10 text-center overflow-y-auto bg-slate-950">
+      <div class="max-w-md w-full glass-card p-8 rounded-3xl shadow-2xl space-y-6 flex flex-col items-center border border-rose-500/50">
+        
+        <div class="w-20 h-20 mx-auto rounded-3xl bg-rose-500/20 border border-rose-500/40 flex items-center justify-center text-4xl shadow-xl shadow-rose-500/30">
+          💥
+        </div>
+
+        <div class="space-y-2">
+          <h2 class="text-2xl font-black text-rose-400 bg-gradient-to-r from-rose-400 to-amber-400 bg-clip-text text-transparent uppercase tracking-wider">
+            ROOM DESTROYED!
+          </h2>
+          <div class="p-4 rounded-2xl bg-slate-950/80 border border-rose-900/60 text-xs font-semibold text-rose-200 shadow-inner leading-relaxed">
+            🏚️ THIS ROOM HAS BEEN DESTROYED &amp; PURGED BY THE CREATOR!
+          </div>
+          <p class="text-xs text-slate-400">The share link is no longer active. You can create your own room or chat with strangers.</p>
+        </div>
+
+        <button id="btnDestroyedGoHome" class="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-rose-600 via-amber-600 to-fuchsia-600 hover:from-rose-500 hover:to-fuchsia-500 text-white font-extrabold text-sm shadow-xl transition transform active:scale-98">
+          🏠 Back to Home Dashboard
+        </button>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Modal 1: Private Room Link Share -->
+      <!-- Screen 6: 100% FULL SCREEN DEDICATED ABOUT PAGE -->
+  <div id="screenKnowUs" class="fixed inset-0 bg-slate-950 z-50 hidden overflow-y-auto p-4 md:p-8">
+    <div class="max-w-2xl mx-auto w-full space-y-8 py-8">
+      
+      <!-- Top Navigation Header -->
+      <div class="flex items-center justify-between border-b border-purple-900/50 pb-4">
+        <button id="btnBackFromKnowUs" class="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 text-white font-bold text-xs md:text-sm shadow-lg transition flex items-center space-x-2 cursor-pointer">
+          <span>← Back to Home</span>
+        </button>
+        <span class="text-xs font-bold px-3 py-1 rounded-full bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/30">Official Information</span>
+      </div>
+
+      <!-- Hero Header -->
+      <div class="glass-card p-6 md:p-8 rounded-3xl text-center space-y-4 shadow-2xl border border-purple-500/40 relative overflow-hidden">
+        <div class="absolute -top-10 -right-10 w-36 h-36 bg-fuchsia-500/20 rounded-full blur-3xl"></div>
+        
+        <div class="relative w-16 h-16 mx-auto flex items-center justify-center rounded-2xl bg-gradient-to-tr from-fuchsia-600 via-purple-600 to-cyan-400 p-0.5 shadow-xl">
+          <div class="w-full h-full rounded-2xl bg-slate-950 flex items-center justify-center">
+            <span class="text-2xl">🌌</span>
+          </div>
+        </div>
+
+        <h1 class="text-3xl md:text-4xl font-black text-white tracking-tight bg-gradient-to-r from-fuchsia-400 via-cyan-300 to-indigo-300 bg-clip-text text-transparent">
+          chatttingusa.space
+        </h1>
+        <p class="text-xs md:text-sm text-slate-300 leading-relaxed font-serif italic max-w-lg mx-auto">
+          "Connecting global minds, fostering real friendships, and bridging foreign languages through privacy-first realtime communication."
+        </p>
+      </div>
+
+      <!-- Founder & Owner Info Card -->
+      <div class="glass-card p-6 md:p-8 rounded-3xl space-y-4 shadow-xl border border-purple-900/50">
+        <h3 class="text-lg font-bold text-white flex items-center space-x-2 border-b border-slate-800 pb-3">
+          <span>👤 Founder & Owner Details</span>
+        </h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs md:text-sm">
+          <div class="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-1">
+            <span class="text-slate-400 font-semibold block text-[11px] uppercase tracking-wider">Founder & Owner</span>
+            <span class="text-white font-extrabold text-base md:text-lg">Raj Kumar Kushwaha</span>
+          </div>
+          <div class="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-1">
+            <span class="text-slate-400 font-semibold block text-[11px] uppercase tracking-wider">Contact Email</span>
+            <a href="mailto:thisiskushwaha@gmail.com" class="text-fuchsia-300 font-bold hover:underline break-all">thisiskushwaha@gmail.com</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- App Features Showcase with Scripted Typography -->
+      <div class="glass-card p-6 md:p-8 rounded-3xl space-y-6 shadow-xl border border-purple-900/50">
+        <h3 class="text-lg font-bold text-white flex items-center space-x-2 border-b border-slate-800 pb-3">
+          <span>⚡ Platform Capabilities & Features</span>
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+          
+          <div class="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-1.5">
+            <span class="font-serif italic font-bold text-fuchsia-400 text-sm block">
+              🔍 Realtime 1-on-1 Stranger Matchmaking
+            </span>
+            <p class="text-slate-300 leading-relaxed font-sans">
+              Connect instantly with online strangers across 35+ countries using high-speed WebSocket presence matching.
+            </p>
+          </div>
+
+          <div class="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-1.5">
+            <span class="font-serif italic font-bold text-cyan-400 text-sm block">
+              🔗 Private Creator Invitation Rooms
+            </span>
+            <p class="text-slate-300 leading-relaxed font-sans">
+              Create custom share links (`#room=XYZ`). Creator holds room shatter & permanent delete controls.
+            </p>
+          </div>
+
+          <div class="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-1.5">
+            <span class="font-serif italic font-bold text-purple-400 text-sm block">
+              🌐 Realtime Auto-Translation Engine
+            </span>
+            <p class="text-slate-300 leading-relaxed font-sans">
+              Automatic translation for foreign messages into English so global users can chat effortlessly.
+            </p>
+          </div>
+
+          <div class="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-1.5">
+            <span class="font-serif italic font-bold text-emerald-400 text-sm block">
+              📷 Direct Peer-to-Peer Image Sharing
+            </span>
+            <p class="text-slate-300 leading-relaxed font-sans">
+              Share direct photos safely in Stranger Chat without any third-party cloud storage servers.
+            </p>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Return Button -->
+      <div class="text-center pt-2 pb-6">
+        <button id="btnReturnHomeFromKnowUs" class="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-fuchsia-600 via-purple-600 to-cyan-500 hover:from-fuchsia-500 hover:to-cyan-400 text-white font-extrabold text-sm shadow-xl transition inline-flex items-center space-x-2 cursor-pointer">
+          <span>← Return to Home Dashboard</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <div id="modalPrivateRoom" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-purple-900/60 rounded-3xl max-w-md w-full p-6 space-y-5 shadow-2xl relative glass-card">
+      <button id="btnClosePrivateModal" class="absolute top-4 right-4 text-slate-400 hover:text-white text-xl">✕</button>
+
+      <div class="flex items-center space-x-3 border-b border-slate-800 pb-4">
+        <div class="p-2.5 bg-fuchsia-500/10 rounded-xl text-fuchsia-400 text-xl">🔗</div>
+        <div>
+          <h3 class="font-bold text-lg text-white">Private Invitation Room</h3>
+          <p class="text-xs text-slate-400">Share link with friends. Room is deletable anytime!</p>
+        </div>
+      </div>
+
+      <div class="space-y-3">
+        <label class="block text-xs font-semibold text-slate-300">Your Shareable Private Room Link:</label>
+        <div class="flex items-center space-x-2">
+          <input type="text" id="inputPrivateRoomUrl" readonly class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-fuchsia-300 font-mono focus:outline-none">
+          <button id="btnCopyPrivateLink" class="px-4 py-2.5 rounded-xl bg-fuchsia-600 hover:bg-fuchsia-500 text-white font-bold text-xs shadow transition whitespace-nowrap">
+            Copy Link
+          </button>
+        </div>
+        <p class="text-[11px] text-slate-400">Friends clicking this link will connect directly to your private room!</p>
+      </div>
+
+      <div class="pt-2 flex justify-end">
+        <button id="btnJoinMyPrivateRoom" class="w-full py-3.5 rounded-2xl bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 text-white font-bold text-xs shadow-lg transition">
+          Enter Private Room
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 2: Saved Rooms Drawer Modal -->
+  <div id="modalRoomsDrawer" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-purple-900/60 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl relative glass-card">
+      <button id="btnCloseRoomsDrawerModal" class="absolute top-4 right-4 text-slate-400 hover:text-white text-xl">✕</button>
+
+      <div class="flex items-center space-x-3 border-b border-slate-800 pb-3">
+        <div class="p-2 bg-fuchsia-500/10 rounded-xl text-fuchsia-400 text-xl">📂</div>
+        <div>
+          <h3 class="font-bold text-base text-white">Your Saved Private Rooms</h3>
+          <p class="text-xs text-slate-400">Re-enter active rooms or view room history</p>
+        </div>
+      </div>
+
+      <div id="savedRoomsContainer" class="max-h-64 overflow-y-auto space-y-2">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Application Logic JS -->
+  <script>
+    // PRE-FILLED BACKEND CREDENTIALS
+    const DEFAULT_SUPABASE_URL = "https://yyvxkhxgzrrqxrrwqvmz.supabase.co";
+    const DEFAULT_SUPABASE_KEY = "sb_publishable_e89MFmMfvnn39UINazPV5A_dcbIRXM3";
+    const SAVED_PROFILE_KEY = "chat_chatting_usa_user_profile_v21";
+    const SAVED_ROOMS_KEY = "chat_chatting_usa_saved_rooms_v21";
+    const DELETED_ROOMS_KEY = "chat_chatting_usa_deleted_rooms_v21";
+    const ROOM_MSG_PREFIX = "chat_chatting_usa_room_history_v21_";
+
+    let supabaseClient = null;
+    let lobbyChannel = null;
+    let roomChannel = null;
+    let globalLoungeChannel = null;
+
+    // User Profile State
+    let myUserId = "usr_" + Math.random().toString(36).substring(2, 9);
+    let myUsername = "Anonymous";
+    let myCountry = "USA 🇺🇸";
+    let myAvatar = "🌸";
+
+    let selectedInterest = "Random";
+    let filterCountry = "All 🌐";
+    let strangerName = "Stranger";
+    let strangerCountry = "🇺🇸";
+
+    let activeChatMode = "stranger"; // 'stranger' or 'private_room'
+    let currentRoomId = null;
+    let createdPrivateRoomId = null;
+    let pendingUrlRoomId = null;
+    const roomCreators = {};
+
+    let isChatActive = false;
+    let isSearching = false;
+
+    // 30+ Expanded Countries Data with Spoken Languages
+    const expandedCountries = [
+      { name: "USA 🇺🇸", lang: "English", flag: "🇺🇸" },
+      { name: "India 🇮🇳", lang: "Hindi / English", flag: "🇮🇳" },
+      { name: "China 🇨🇳", lang: "Mandarin", flag: "🇨🇳" },
+      { name: "Pakistan 🇵🇰", lang: "Urdu / English", flag: "🇵🇰" },
+      { name: "UK 🇬🇧", lang: "English", flag: "🇬🇧" },
+      { name: "Canada 🇨🇦", lang: "English / French", flag: "🇨🇦" },
+      { name: "Japan 🇯🇵", lang: "Japanese", flag: "🇯🇵" },
+      { name: "Germany 🇩🇪", lang: "German", flag: "🇩🇪" },
+      { name: "France 🇫🇷", lang: "French", flag: "🇫🇷" },
+      { name: "Brazil 🇧🇷", lang: "Portuguese", flag: "🇧🇷" },
+      { name: "South Korea 🇰🇷", lang: "Korean", flag: "🇰🇷" },
+      { name: "Russia 🇷🇺", lang: "Russian", flag: "🇷🇺" },
+      { name: "Italy 🇮🇹", lang: "Italian", flag: "🇮🇹" },
+      { name: "Spain 🇪🇸", lang: "Spanish", flag: "🇪🇸" },
+      { name: "UAE 🇦🇪", lang: "Arabic", flag: "🇦🇪" },
+      { name: "Australia 🇦🇺", lang: "English", flag: "🇦🇺" },
+      { name: "Mexico 🇲🇽", lang: "Spanish", flag: "🇲🇽" },
+      { name: "Saudi Arabia 🇸🇦", lang: "Arabic", flag: "🇸🇦" },
+      { name: "Bangladesh 🇧🇩", lang: "Bengali", flag: "🇧🇩" },
+      { name: "Philippines 🇵🇭", lang: "Filipino / English", flag: "🇵🇭" },
+      { name: "Indonesia 🇮🇩", lang: "Indonesian", flag: "🇮🇩" },
+      { name: "Turkey 🇹🇷", lang: "Turkish", flag: "🇹🇷" },
+      { name: "Nigeria 🇳🇬", lang: "English", flag: "🇳🇬" },
+      { name: "Egypt 🇪🇬", lang: "Arabic", flag: "🇪🇬" },
+      { name: "Netherlands 🇳🇱", lang: "Dutch", flag: "🇳🇱" },
+      { name: "Argentina 🇦🇷", lang: "Spanish", flag: "🇦🇷" },
+      { name: "Sweden 🇸🇪", lang: "Swedish", flag: "🇸🇪" },
+      { name: "Vietnam 🇻🇳", lang: "Vietnamese", flag: "🇻🇳" },
+      { name: "Thailand 🇹🇭", lang: "Thai", flag: "🇹🇭" },
+      { name: "Colombia 🇨🇴", lang: "Spanish", flag: "🇨🇴" },
+      { name: "South Africa 🇿🇦", lang: "English", flag: "🇿🇦" },
+      { name: "Switzerland 🇨🇭", lang: "German / French", flag: "🇨🇭" },
+      { name: "Singapore 🇸🇬", lang: "English", flag: "🇸🇬" },
+      { name: "Greece 🇬🇷", lang: "Greek", flag: "🇬🇷" },
+      { name: "Other 🌐", lang: "Universal", flag: "🌐" }
+    ];
+
+    // Quick 250ms Door Panel Transitions
+    function openDoors() {
+      const doorOverlay = document.getElementById('doorOverlay');
+      if (doorOverlay) {
+        doorOverlay.classList.add('door-open');
+        doorOverlay.classList.remove('door-closed');
+      }
+    }
+
+    function animateScreenTransition(actionCallback) {
+      const doorOverlay = document.getElementById('doorOverlay');
+      if (doorOverlay) {
+        doorOverlay.classList.remove('door-open');
+        doorOverlay.classList.add('door-closed');
+        setTimeout(() => {
+          if (actionCallback) actionCallback();
+          openDoors();
+        }, 250);
+      } else {
+        if (actionCallback) actionCallback();
+      }
+    }
+
+    // Door Shatter / Particle Blast Effect on Creator Delete Room
+    function triggerDoorShatterBlast(callback) {
+      const canvas = document.getElementById('blastCanvas');
+      const mainApp = document.getElementById('mainAppWrapper');
+      canvas.classList.remove('hidden');
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      const ctx = canvas.getContext('2d');
+
+      mainApp.classList.add('animate-shake');
+
+      const particles = [];
+      for (let i = 0; i < 180; i++) {
+        particles.push({
+          x: canvas.width / 2,
+          y: canvas.height / 2,
+          vx: (Math.random() - 0.5) * 30,
+          vy: (Math.random() - 0.5) * 30,
+          color: Math.random() > 0.5 ? '#f43f5e' : '#fbbf24',
+          size: Math.random() * 9 + 3,
+          alpha: 1
+        });
+      }
+
+      let frames = 0;
+      function renderBlast() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        particles.forEach(p => {
+          p.x += p.vx;
+          p.y += p.vy;
+          p.alpha -= 0.025;
+          ctx.globalAlpha = Math.max(0, p.alpha);
+          ctx.fillStyle = p.color;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fill();
+        });
+
+        frames++;
+        if (frames < 45) {
+          requestAnimationFrame(renderBlast);
+        } else {
+          canvas.classList.add('hidden');
+          mainApp.classList.remove('animate-shake');
+          if (callback) callback();
+        }
+      }
+      renderBlast();
+    }
+
+    // LocalStorage Memory Helpers
+    function loadSavedProfile() {
+      const data = localStorage.getItem(SAVED_PROFILE_KEY);
+      if (data) {
+        try {
+          const p = JSON.parse(data);
+          if (p.username && p.country) {
+            myUsername = p.username;
+            myCountry = p.country;
+            myAvatar = p.avatar || "🌸";
+            return true;
+          }
+        } catch (e) {}
+      }
+      return false;
+    }
+
+    function saveUserProfile(u, c, a) {
+      localStorage.setItem(SAVED_PROFILE_KEY, JSON.stringify({
+        username: u, country: c, avatar: a, updatedAt: Date.now()
+      }));
+    }
+
+    function getDeletedRooms() {
+      const data = localStorage.getItem(DELETED_ROOMS_KEY);
+      return data ? JSON.parse(data) : [];
+    }
+
+    function markRoomAsDeleted(roomId) {
+      let deleted = getDeletedRooms();
+      if (!deleted.includes(roomId)) {
+        deleted.push(roomId);
+        localStorage.setItem(DELETED_ROOMS_KEY, JSON.stringify(deleted));
+      }
+      let rooms = getSavedRooms().filter(r => r.id !== roomId);
+      localStorage.setItem(SAVED_ROOMS_KEY, JSON.stringify(rooms));
+      localStorage.removeItem(ROOM_MSG_PREFIX + roomId);
+
+      if (supabaseClient) {
+        try {
+          supabaseClient.from('messages').delete().eq('room_id', roomId).then(() => {}).catch(() => {});
+        } catch (e) {}
+      }
+      updateSavedRoomsBadge();
+    }
+
+    function isRoomDeleted(roomId) {
+      return getDeletedRooms().includes(roomId);
+    }
+
+    function getSavedRooms() {
+      const data = localStorage.getItem(SAVED_ROOMS_KEY);
+      return data ? JSON.parse(data) : [];
+    }
+
+    function saveRoomToHistory(roomId, roomTitle, creatorId) {
+      let rooms = getSavedRooms();
+      if (!rooms.find(r => r.id === roomId)) {
+        rooms.unshift({ id: roomId, title: roomTitle || ("Private Room #" + roomId.slice(-6)), creatorId: creatorId || myUserId, joinedAt: Date.now() });
+        localStorage.setItem(SAVED_ROOMS_KEY, JSON.stringify(rooms));
+      }
+      updateSavedRoomsBadge();
+    }
+
+    function updateSavedRoomsBadge() {
+      const rooms = getSavedRooms();
+      document.getElementById('roomsBadgeCount').innerText = rooms.length;
+    }
+
+    function getRoomMessageHistory(roomId) {
+      const data = localStorage.getItem(ROOM_MSG_PREFIX + roomId);
+      return data ? JSON.parse(data) : [];
+    }
+
+    function saveRoomMessage(roomId, msgObj) {
+      let history = getRoomMessageHistory(roomId);
+      history.push(msgObj);
+      if (history.length > 100) history.shift();
+      localStorage.setItem(ROOM_MSG_PREFIX + roomId, JSON.stringify(history));
+    }
+
+    // Toast Notification Banner
+    function showToast(msg, isSuccess = true) {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `pointer-events-auto px-4 py-2.5 rounded-xl text-xs font-bold shadow-2xl border flex items-center space-x-2 transition transform translate-y-2 opacity-0 ${
+        isSuccess ? 'bg-emerald-950 text-emerald-300 border-emerald-800' : 'bg-rose-950 text-rose-300 border-rose-800'
+      }`;
+      toast.innerHTML = `<span>${isSuccess ? '✨' : '⚠️'}</span><span>${escapeHtml(msg)}</span>`;
+      container.appendChild(toast);
+
+      setTimeout(() => toast.classList.remove('translate-y-2', 'opacity-0'), 10);
+      setTimeout(() => {
+        toast.classList.add('opacity-0');
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    // Audio Tone Synthesizer
+    function playAudioTone(type) {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        if (type === 'send') {
+          osc.frequency.setValueAtTime(400, ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.1);
+          gain.gain.setValueAtTime(0.08, ctx.currentTime);
+          gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.1);
+        } else if (type === 'receive') {
+          osc.frequency.setValueAtTime(650, ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(450, ctx.currentTime + 0.12);
+          gain.gain.setValueAtTime(0.1, ctx.currentTime);
+          gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.12);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.12);
+        } else if (type === 'match') {
+          osc.frequency.setValueAtTime(350, ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(700, ctx.currentTime + 0.2);
+          gain.gain.setValueAtTime(0.15, ctx.currentTime);
+          gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.2);
+        }
+      } catch (e) {}
+    }
+
+    function escapeHtml(str) {
+      return (str || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    function showScreen(screenId) {
+      document.getElementById('screenOnboarding').classList.add('hidden');
+      document.getElementById('screenDashboard').classList.add('hidden');
+      document.getElementById('screenSearching').classList.add('hidden');
+      document.getElementById('screenChat').classList.add('hidden');
+      document.getElementById('screenRoomDestroyed').classList.add('hidden');
+      const knowUsEl = document.getElementById('screenKnowUs');
+      if (knowUsEl) knowUsEl.classList.add('hidden');
+
+      const mainHeader = document.getElementById('mainHeader');
+      if (mainHeader) {
+        if (screenId === 'screenChat' || screenId === 'screenSearching') {
+          mainHeader.classList.add('hidden');
+        } else {
+          mainHeader.classList.remove('hidden');
+        }
+      }
+
+      document.getElementById(screenId).classList.remove('hidden');
+    }
+
+    // Backend Initialization
+    function initBackend() {
+      if (window.supabase) {
+        try {
+          supabaseClient = window.supabase.createClient(DEFAULT_SUPABASE_URL, DEFAULT_SUPABASE_KEY);
+          document.getElementById('statusBadge').className = "flex items-center space-x-2 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+          document.getElementById('statusText').innerText = "Live Active";
+          return true;
+        } catch (err) { console.error("Connection Error:", err); }
+      }
+      return false;
+    }
+
+    // Populate Country Select Dropdown
+    function populateCountrySelect() {
+      const select = document.getElementById('selectCountry');
+      select.innerHTML = '';
+      expandedCountries.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = `${c.name} (${c.lang})`;
+        opt.innerText = `${c.name} - ${c.lang}`;
+        select.appendChild(opt);
+      });
+    }
+
+    // Check URL Hash for Private Room Link
+    function checkUrlForPrivateRoom() {
+      const hash = window.location.hash;
+      if (hash && hash.includes('#room=')) {
+        const rId = hash.replace('#room=', '').trim();
+        if (rId) {
+          if (isRoomDeleted(rId)) {
+            window.location.hash = '';
+            showToast("⚠️ This room link was deleted by the creator.", false);
+            showScreen('screenDashboard');
+            return null;
+          }
+          pendingUrlRoomId = rId;
+          return rId;
+        }
+      }
+      return null;
+    }
+
+    // Create Private Shareable Room Link
+    function handleCreatePrivateRoom() {
+      createdPrivateRoomId = "private_" + Math.random().toString(36).substring(2, 9);
+      roomCreators[createdPrivateRoomId] = myUserId;
+
+      const shareUrl = window.location.origin + window.location.pathname + "#room=" + createdPrivateRoomId;
+      document.getElementById('inputPrivateRoomUrl').value = shareUrl;
+      document.getElementById('modalPrivateRoom').classList.remove('hidden');
+    }
+
+    // Render Country Explorer Grid
+    function renderCountryExplorer() {
+      const container = document.getElementById('countryGridContainer');
+      container.innerHTML = '';
+
+      expandedCountries.forEach(c => {
+        const card = document.createElement('div');
+        card.className = "glass-card p-4 rounded-2xl flex items-center justify-between border border-slate-800 hover:border-fuchsia-500/50 transition cursor-pointer";
+        const simulatedOnline = Math.floor(22 + Math.random() * 50);
+        
+        card.innerHTML = `
+          <div class="flex items-center space-x-3">
+            <span class="text-3xl">${c.flag}</span>
+            <div>
+              <h4 class="font-bold text-sm text-white">${c.name}</h4>
+              <p class="text-[11px] text-fuchsia-400 font-medium">${c.lang}</p>
+            </div>
+          </div>
+          <button class="connect-country-btn px-3 py-1.5 rounded-xl bg-fuchsia-600/20 hover:bg-fuchsia-600 text-fuchsia-300 hover:text-white font-bold text-xs border border-fuchsia-500/30 transition">
+            Chat
+          </button>
+        `;
+
+        card.querySelector('.connect-country-btn').addEventListener('click', () => {
+          filterCountry = c.name;
+          startFindStranger();
+        });
+
+        container.appendChild(card);
+      });
+    }
+
+    // Chat Message Helpers
+    
+    // Supabase DB Purge-on-Load Zero Storage Helpers
+    async function pushToSupabaseDB(roomId, payload) {
+      if (!supabaseClient || !roomId) return;
+      try {
+        await supabaseClient.from('room_messages').insert([{
+          room_id: roomId,
+          sender_id: payload.senderId || myUserId,
+          sender_name: payload.senderName || myUsername,
+          flag: payload.flag || myCountry,
+          text: payload.text || '',
+          is_system: !!payload.isSystem,
+          created_at: new Date().toISOString()
+        }]);
+      } catch (e) {}
+    }
+
+    async function syncRoomHistoryFromSupabase(roomId) {
+      if (!supabaseClient || !roomId) return;
+      try {
+        const { data, error } = await supabaseClient
+          .from('room_messages')
+          .select('*')
+          .eq('room_id', roomId)
+          .order('created_at', { ascending: true });
+
+        if (data && data.length > 0) {
+          data.forEach(row => {
+            saveRoomMessage(roomId, {
+              sender: row.sender_name,
+              senderId: row.sender_id,
+              text: row.text,
+              flag: row.flag,
+              isSystem: row.is_system,
+              time: new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            });
+          });
+          // PURGE IMMEDIATELY FROM SUPABASE DATABASE (KEEP 0 MB)
+          await supabaseClient.from('room_messages').delete().eq('room_id', roomId);
+        }
+      } catch (e) {}
+    }
+
+    function updateActiveUsersUI(presenceState) {
+      const users = [];
+      for (const key in presenceState) {
+        presenceState[key].forEach(p => {
+          if (p.user && !users.includes(p.user)) {
+            users.push(p.user);
+          }
+        });
+      }
+      const count = users.length || 1;
+      const activeEl = document.getElementById('chatActiveUsersList');
+      const statusEl = document.getElementById('chatStrangerStatus');
+
+      if (activeChatMode === 'private_room') {
+        if (activeEl) {
+          activeEl.classList.remove('hidden');
+          const names = users.length > 0 ? users.join(', ') : myUsername;
+          activeEl.innerHTML = `<span class="inline-flex items-center space-x-1.5 text-emerald-400 font-semibold text-[11px] truncate"><span class="relative flex h-2 w-2 shrink-0"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span></span><span>Active (${count}): <strong class="text-white font-bold">${escapeHtml(names)}</strong></span></span>`;
+        }
+        if (statusEl) statusEl.classList.add('hidden');
+      } else {
+        if (activeEl) activeEl.classList.add('hidden');
+        if (statusEl) {
+          statusEl.classList.remove('hidden');
+          statusEl.innerText = "Live Realtime Session";
+        }
+      }
+    }
+
+    
+    // Realtime Multi-Language Auto-Translation Engine
+    let isAutoTranslateEnabled = true;
+
+    const quickTranslationDictionary = {
+      "Konnichiwa": "Hello!",
+      "Genki desu ka?": "How are you?",
+      "Arigatou": "Thank you!",
+      "Bonjour": "Hello!",
+      "Comment ça va?": "How are you doing?",
+      "Merci": "Thank you!",
+      "¡Hola!": "Hello!",
+      "¿Cómo estás?": "How are you?",
+      "Gracias": "Thank you!",
+      "Hallo": "Hello!",
+      "Wie geht's?": "How are you?",
+      "Danke": "Thank you!",
+      "Привет": "Hello!",
+      "Спасибо": "Thank you!",
+      "नमस्ते": "Hello!",
+      "कैसे हो?": "How are you?",
+      "你好": "Hello!",
+      "谢谢": "Thank you!",
+      "안녕하세요": "Hello!",
+      "감사합니다": "Thank you!",
+      "مرحبا": "Hello!",
+      "شكرا": "Thank you!"
+    };
+
+    async function fetchOnlineTranslation(text, targetLang = 'en') {
+      if (!text || !text.trim()) return text;
+      // Dictionary check first for instant performance
+      for (const [key, val] of Object.entries(quickTranslationDictionary)) {
+        if (text.toLowerCase().includes(key.toLowerCase())) {
+          return text.replace(new RegExp(key, 'gi'), val);
+        }
+      }
+      try {
+        const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        if (data && data[0] && data[0][0] && data[0][0][0]) {
+          return data[0][0][0];
+        }
+      } catch (e) {}
+      return text;
+    }
+
+    function appendSystemMsg(text) {
+      const box = document.getElementById('chatMessagesBox');
+      const div = document.createElement('div');
+      div.className = "text-center my-2";
+      div.innerHTML = `<span class="inline-block px-3.5 py-1.5 rounded-full bg-slate-900 border border-purple-900/50 text-[11px] text-fuchsia-300 font-medium shadow-sm">${escapeHtml(text)}</span>`;
+      box.appendChild(div);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function appendChatMsg(sender, text, isMe, flag = "🇮🇳", customTime = null) {
+      const box = document.getElementById('chatMessagesBox');
+      const div = document.createElement('div');
+      div.className = `flex flex-col ${isMe ? 'items-end' : 'items-start'} space-y-1 my-1.5`;
+
+      const time = customTime || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const msgId = "msg_" + Math.random().toString(36).substring(2, 9);
+
+      div.innerHTML = `
+        <div class="flex items-center space-x-1.5 text-[10px] text-slate-400 px-1">
+          <span class="font-bold ${isMe ? 'text-fuchsia-400' : 'text-cyan-400'}">${escapeHtml(sender)}</span>
+          <span>${flag}</span>
+          <span>•</span>
+          <span>${time}</span>
+        </div>
+        <div class="max-w-[92%] sm:max-w-[80%] px-4 py-3 rounded-2xl text-sm md:text-base leading-relaxed break-words shadow-sm ${
+          isMe
+            ? 'bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white rounded-br-none shadow-fuchsia-900/30'
+            : 'bg-slate-900/90 text-slate-100 border border-slate-800/90 rounded-bl-none shadow-black/40'
+        }">
+          <div id="${msgId}_text">${escapeHtml(text)}</div>
+          ${!isMe ? `<div id="${msgId}_translation" class="hidden mt-2 pt-2 border-t border-slate-800 text-xs text-fuchsia-300 font-medium flex flex-col space-y-1">
+            <span class="flex items-center space-x-1 text-[10px] text-slate-400">
+              <span>🌐</span>
+              <span>Auto-Translated to English:</span>
+            </span>
+            <span id="${msgId}_translatedContent" class="italic text-cyan-200"></span>
+          </div>
+          <button onclick="toggleMsgTranslation('${msgId}')" class="mt-1 text-[10px] text-slate-400 hover:text-fuchsia-400 underline transition flex items-center space-x-1">
+            <span>🌐 Translate / Original</span>
+          </button>` : ''}
+        </div>
+      `;
+
+      box.appendChild(div);
+      box.scrollTop = box.scrollHeight;
+
+      // Trigger background translation if message is from peer & Auto-Translate is ON
+      if (!isMe && isAutoTranslateEnabled) {
+        fetchOnlineTranslation(text, 'en').then(translatedText => {
+          if (translatedText && translatedText !== text) {
+            const transDiv = document.getElementById(`${msgId}_translation`);
+            const contentSpan = document.getElementById(`${msgId}_translatedContent`);
+            if (transDiv && contentSpan) {
+              contentSpan.innerText = translatedText;
+              transDiv.classList.remove('hidden');
+            }
+          }
+        });
+      }
+    }
+
+    function toggleMsgTranslation(msgId) {
+      const transDiv = document.getElementById(`${msgId}_translation`);
+      if (transDiv) {
+        transDiv.classList.toggle('hidden');
+      }
+    }
+
+
+    // Realtime 1-on-1 Stranger Matchmaking & Room Management
+    
+    // Direct P2P Image Sharing & Fullscreen Preview
+    function previewFullImage(src) {
+      let modal = document.getElementById('modalImagePreview');
+      if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'modalImagePreview';
+        modal.className = 'fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4 cursor-pointer';
+        modal.onclick = function() { modal.classList.add('hidden'); };
+        modal.innerHTML = `
+          <div class="relative max-w-3xl max-h-[90vh]">
+            <img id="previewImageSrc" src="" class="rounded-2xl max-h-[85vh] w-auto shadow-2xl border border-purple-900/50 object-contain">
+            <p class="text-center text-xs text-slate-400 mt-2">Click anywhere to close</p>
+          </div>
+        `;
+        document.body.appendChild(modal);
+      }
+      document.getElementById('previewImageSrc').src = src;
+      modal.classList.remove('hidden');
+    }
+
+    function appendImageMsg(sender, imgUrl, isMe, flag = "🇮🇳", customTime = null) {
+      const box = document.getElementById('chatMessagesBox');
+      const div = document.createElement('div');
+      div.className = `flex flex-col ${isMe ? 'items-end' : 'items-start'} space-y-1 my-2`;
+
+      const time = customTime || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      div.innerHTML = `
+        <div class="flex items-center space-x-1.5 text-[10px] text-slate-400 px-1">
+          <span class="font-bold ${isMe ? 'text-fuchsia-400' : 'text-cyan-400'}">${escapeHtml(sender)}</span>
+          <span>${flag}</span>
+          <span>•</span>
+          <span>${time}</span>
+        </div>
+        <div class="max-w-[88%] sm:max-w-[75%] p-1.5 rounded-2xl ${
+          isMe
+            ? 'bg-gradient-to-r from-fuchsia-600 to-purple-600 rounded-br-none shadow-md'
+            : 'bg-slate-900 border border-slate-800 rounded-bl-none shadow-md'
+        }">
+          <img src="${imgUrl}" alt="P2P Shared Image" class="rounded-xl w-full max-h-72 object-cover cursor-pointer hover:opacity-95 transition" onclick="previewFullImage('${imgUrl}')">
+          <p class="text-[10px] text-slate-400 px-2 py-1 flex items-center justify-between">
+            <span>📷 P2P Image</span>
+            <span>${time}</span>
+          </p>
+        </div>
+      `;
+
+      box.appendChild(div);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function compressAndSendImage(file) {
+      if (!file || !file.type.startsWith('image/')) {
+        showToast("Please select a valid image file!", false);
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          const maxDim = 600;
+
+          if (width > height) {
+            if (width > maxDim) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            }
+          } else {
+            if (height > maxDim) {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.75);
+          sendImageMessage(compressedDataUrl);
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function sendImageMessage(dataUrl) {
+      if (!isChatActive || !currentRoomId) return;
+      const msgTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      appendImageMsg(myUsername, dataUrl, true, myCountry, msgTime);
+      saveRoomMessage(currentRoomId, { sender: myUsername, senderId: myUserId, image: dataUrl, flag: myCountry, time: msgTime });
+      playAudioTone('send');
+
+      if (supabaseClient && roomChannel) {
+        roomChannel.send({
+          type: 'broadcast',
+          event: 'img',
+          payload: { senderId: myUserId, senderName: myUsername, flag: myCountry, image: dataUrl, time: msgTime }
+        });
+      }
+    }
+
+
+        let recentlyMatchedUserIds = [];
+
+    // 100% Real-Only Matchmaking Engine with Smart Non-Repeat Priority
+    function startFindStranger() {
+      if (isSearching) return;
+      isSearching = true;
+      isChatActive = false;
+      showScreen('screenSearching');
+
+      const statusEl = document.getElementById('searchStatusText');
+      if (statusEl) {
+        statusEl.innerText = "Searching for real online stranger from " + (filterCountry || "All Countries") + "...";
+      }
+
+      if (!supabaseClient) {
+        if (statusEl) statusEl.innerText = "Connecting to Supabase realtime lobby...";
+        return;
+      }
+
+      // Supabase Realtime Matchmaking Channel
+      if (lobbyChannel) {
+        try { lobbyChannel.unsubscribe(); } catch(e){}
+      }
+
+      lobbyChannel = supabaseClient.channel('stranger_matchmaking_lobby_v3', {
+        config: { presence: { key: myUserId } }
+      });
+
+      let matchFound = false;
+
+      lobbyChannel
+        .on('presence', { event: 'sync' }, () => {
+          if (!isSearching || matchFound) return;
+          const state = lobbyChannel.presenceState();
+          const allCandidates = [];
+          const newCandidates = [];
+
+          for (const key in state) {
+            state[key].forEach(peer => {
+              if (peer.id !== myUserId && peer.isSearching) {
+                // Apply country filter check
+                let countryMatches = true;
+                if (filterCountry && filterCountry !== "All 🌐") {
+                  countryMatches = (peer.country === filterCountry || peer.filterCountry === "All 🌐" || peer.filterCountry === myCountry);
+                }
+
+                if (countryMatches) {
+                  allCandidates.push(peer);
+                  if (!recentlyMatchedUserIds.includes(peer.id)) {
+                    newCandidates.push(peer);
+                  }
+                }
+              }
+            });
+          }
+
+          // Prioritize new/unmatched real human candidates
+          const selectedPool = newCandidates.length > 0 ? newCandidates : allCandidates;
+
+          if (selectedPool.length > 0) {
+            matchFound = true;
+            const matchedPeer = selectedPool[Math.floor(Math.random() * selectedPool.length)];
+            const pairRoomId = "pair_" + [myUserId, matchedPeer.id].sort().join("_");
+            isSearching = false;
+
+            // Save to recent matches history so same user isn't re-matched immediately
+            recentlyMatchedUserIds.push(matchedPeer.id);
+            if (recentlyMatchedUserIds.length > 20) recentlyMatchedUserIds.shift();
+
+            // Broadcast match notification to peer
+            lobbyChannel.send({
+              type: 'broadcast',
+              event: 'match_found',
+              payload: {
+                targetUserId: matchedPeer.id,
+                peerId: myUserId,
+                peerName: myUsername,
+                peerCountry: myCountry,
+                roomId: pairRoomId
+              }
+            });
+
+            lobbyChannel.unsubscribe();
+            lobbyChannel = null;
+
+            joinChatRoom(pairRoomId, matchedPeer.name, matchedPeer.country, 'stranger');
+          }
+        })
+        .on('broadcast', { event: 'match_found' }, (payload) => {
+          const data = payload.payload;
+          if (data.targetUserId === myUserId && isSearching && !matchFound) {
+            matchFound = true;
+            isSearching = false;
+
+            recentlyMatchedUserIds.push(data.peerId);
+            if (recentlyMatchedUserIds.length > 20) recentlyMatchedUserIds.shift();
+
+            if (lobbyChannel) {
+              try { lobbyChannel.unsubscribe(); } catch(e){}
+              lobbyChannel = null;
+            }
+            joinChatRoom(data.roomId, data.peerName, data.peerCountry, 'stranger');
+          }
+        })
+        .subscribe(async (status) => {
+          if (status === 'SUBSCRIBED' && isSearching) {
+            await lobbyChannel.track({
+              id: myUserId,
+              name: myUsername,
+              country: myCountry,
+              filterCountry: filterCountry,
+              isSearching: true,
+              timestamp: Date.now()
+            });
+          }
+        });
+    }
+
+    // Room Creation & Deletion Handlers
+    function handleCreatePrivateRoom() {
+      createdPrivateRoomId = "private_" + Math.random().toString(36).substring(2, 9);
+      roomCreators[createdPrivateRoomId] = myUserId;
+
+      saveRoomToHistory(createdPrivateRoomId, "Private Room #" + createdPrivateRoomId.slice(-6), myUserId);
+
+      const shareUrl = window.location.origin + window.location.pathname + "#room=" + createdPrivateRoomId;
+      window.location.hash = "room=" + createdPrivateRoomId;
+
+      const inputUrl = document.getElementById('inputPrivateRoomUrl');
+      if (inputUrl) inputUrl.value = shareUrl;
+
+      const modal = document.getElementById('modalPrivateRoom');
+      if (modal) modal.classList.remove('hidden');
+
+      showToast("Private Room Created! Share link with friends.");
+    }
+
+    function handleDeleteRoomByCreator() {
+      if (!currentRoomId) return;
+
+      if (supabaseClient && roomChannel) {
+        roomChannel.send({
+          type: 'broadcast',
+          event: 'room_deleted',
+          payload: { roomId: currentRoomId }
+        });
+      }
+
+      triggerDoorShatterBlast(() => {
+        markRoomAsDeleted(currentRoomId);
+        window.location.hash = '';
+        if (roomChannel) {
+          try { roomChannel.unsubscribe(); } catch(e){}
+          roomChannel = null;
+        }
+        isChatActive = false;
+        showToast("💥 Room Shattered & Deleted!");
+        showScreen('screenDashboard');
+      });
+    }
+
+
+    async function joinChatRoom(roomId, peerTitle, peerCountry, mode = 'private_room') {
+      if (isRoomDeleted(roomId)) {
+        window.location.hash = '';
+        showToast("⚠️ This room was deleted by the creator.", false);
+        showScreen('screenDashboard');
+        return;
+      }
+
+      isSearching = false;
+      isChatActive = true;
+      activeChatMode = mode;
+      currentRoomId = roomId;
+      strangerName = peerTitle;
+      strangerCountry = peerCountry;
+
+      showScreen('screenChat');
+      openDoors(); // Ensure doors open completely when entering chat!
+
+      document.getElementById('disconnectedPromptBanner').classList.add('hidden');
+      const typingBar = document.getElementById('typingIndicatorBar');
+      if (typingBar) typingBar.classList.add('hidden');
+      document.getElementById('chatMessagesBox').innerHTML = '';
+
+      const btnNext = document.getElementById('btnNextStranger');
+      const btnCopyLink = document.getElementById('btnCopyInRoomLink');
+      const btnDelete = document.getElementById('btnDeleteRoom');
+
+      const isCreator = (roomCreators[roomId] === myUserId) || (getSavedRooms().find(r => r.id === roomId && r.creatorId === myUserId));
+
+      const btnAttachImg = document.getElementById('btnAttachImage');
+
+      if (activeChatMode === 'private_room') {
+        btnNext.classList.add('hidden');
+        btnCopyLink.classList.remove('hidden');
+        if (btnAttachImg) btnAttachImg.classList.add('hidden'); // Image upload ONLY in stranger chat!
+
+        if (isCreator) {
+          btnDelete.classList.remove('hidden');
+        } else {
+          btnDelete.classList.add('hidden');
+        }
+
+        document.getElementById('chatStrangerTitle').innerText = "Private Invitation Room";
+        document.getElementById('chatStrangerFlag').innerText = "🔗";
+        const statusEl = document.getElementById('chatStrangerStatus');
+        const activeEl = document.getElementById('chatActiveUsersList');
+        if (statusEl) statusEl.classList.add('hidden');
+        if (activeEl) activeEl.classList.remove('hidden');
+
+        saveRoomToHistory(roomId, "Private Room #" + roomId.slice(-6), isCreator ? myUserId : null);
+      } else {
+        btnNext.classList.remove('hidden');
+        btnCopyLink.classList.add('hidden');
+        btnDelete.classList.add('hidden');
+        if (btnAttachImg) btnAttachImg.classList.remove('hidden'); // Image upload enabled for Stranger Chat!
+
+        document.getElementById('chatStrangerTitle').innerText = strangerName;
+        document.getElementById('chatStrangerFlag').innerText = strangerCountry;
+        const statusEl = document.getElementById('chatStrangerStatus');
+        const activeEl = document.getElementById('chatActiveUsersList');
+        if (statusEl) {
+          statusEl.classList.remove('hidden');
+          statusEl.innerText = "Live Realtime Session";
+        }
+        if (activeEl) activeEl.classList.add('hidden');
+      }
+
+      // 1. Sync any offline/unread messages from Supabase (Purge-on-load zero storage)
+      await syncRoomHistoryFromSupabase(roomId);
+
+      // 2. Load previous local history
+      const oldHistory = getRoomMessageHistory(roomId);
+      if (oldHistory.length > 0) {
+        appendSystemMsg("Loaded " + oldHistory.length + " previous messages from room memory.");
+        oldHistory.forEach(m => {
+          if (m.isSystem) {
+            appendSystemMsg(m.text);
+          } else if (m.image) {
+            appendImageMsg(m.sender, m.image, m.senderId === myUserId, m.flag, m.time);
+          } else {
+            appendChatMsg(m.sender, m.text, m.senderId === myUserId, m.flag, m.time);
+          }
+        });
+      } else {
+        if (activeChatMode !== 'private_room') {
+          appendSystemMsg("Matched with " + strangerName + " (" + strangerCountry + ")! Say Hello!");
+        }
+      }
+
+      // 3. Record user join time
+      const joinTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      playAudioTone('match');
+
+      if (supabaseClient) {
+        roomChannel = supabaseClient.channel(currentRoomId, {
+          config: { presence: { key: myUserId } }
+        });
+
+        roomChannel
+          .on('broadcast', { event: 'msg' }, (payload) => {
+            const data = payload.payload;
+            if (data.senderId !== myUserId && isChatActive) {
+              appendChatMsg(data.senderName, data.text, false, data.flag, data.time);
+              saveRoomMessage(currentRoomId, { sender: data.senderName, senderId: data.senderId, text: data.text, flag: data.flag, time: data.time });
+              playAudioTone('receive');
+            }
+          })
+          .on('broadcast', { event: 'user_joined' }, (payload) => {
+            const data = payload.payload;
+            if (data.senderId !== myUserId && isChatActive) {
+              const sysMsg = `🌸 ${data.senderName} (${data.flag || ''}) entered the room at ${data.time}`;
+              appendSystemMsg(sysMsg);
+              saveRoomMessage(currentRoomId, { isSystem: true, text: sysMsg, time: data.time });
+            }
+          })
+          .on('broadcast', { event: 'typing' }, (payload) => {
+            const data = payload.payload;
+            if (data.senderId !== myUserId && isChatActive) {
+              const bar = document.getElementById('typingIndicatorBar');
+              const txt = document.getElementById('typingIndicatorText');
+              if (bar && txt) {
+                if (data.isTyping) {
+                  bar.classList.remove('hidden');
+                  txt.innerText = `${data.senderName} is typing...`;
+                  clearTimeout(window.peerTypingTimer);
+                  window.peerTypingTimer = setTimeout(() => {
+                    bar.classList.add('hidden');
+                  }, 3000);
+                } else {
+                  bar.classList.add('hidden');
+                }
+              }
+            }
+          })
+          .on('broadcast', { event: 'room_deleted' }, () => {
+            if (isChatActive) {
+              triggerDoorShatterBlast(() => {
+                markRoomAsDeleted(currentRoomId);
+                window.location.hash = '';
+                isChatActive = false;
+                showToast("💥 Room was deleted by creator!", false);
+                showScreen('screenDashboard');
+              });
+            }
+          })
+          .on('broadcast', { event: 'peer_left' }, (payload) => {
+            const data = payload.payload || {};
+            if (isChatActive) {
+              const leaveNotice = `⚠️ ${data.senderName || 'A participant'} left the room.`;
+              appendSystemMsg(leaveNotice);
+              if (activeChatMode === 'stranger') {
+                document.getElementById('disconnectedPromptBanner').classList.remove('hidden');
+              }
+            }
+          })
+          .on('presence', { event: 'sync' }, () => {
+            updateActiveUsersUI(roomChannel.presenceState());
+          })
+          .subscribe(async (status) => {
+            if (status === 'SUBSCRIBED') {
+              await roomChannel.track({
+                user: myUsername,
+                flag: myCountry,
+                avatar: myAvatar,
+                id: myUserId
+              });
+
+              roomChannel.send({
+                type: 'broadcast',
+                event: 'user_joined',
+                payload: { senderId: myUserId, senderName: myUsername, flag: myCountry, time: joinTime }
+              });
+            }
+          });
+      }
+    }
+
+    function sendMessage(text) {
+      if (!text || !text.trim() || !isChatActive) return;
+      const clean = text.trim();
+      const msgTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      appendChatMsg(myUsername, clean, true, myCountry, msgTime);
+      saveRoomMessage(currentRoomId, { sender: myUsername, senderId: myUserId, text: clean, flag: myCountry, time: msgTime });
+      pushToSupabaseDB(currentRoomId, { senderId: myUserId, senderName: myUsername, text: clean, flag: myCountry });
+      playAudioTone('send');
+
+      const bar = document.getElementById('typingIndicatorBar');
+      if (bar) bar.classList.add('hidden');
+
+      if (supabaseClient && roomChannel) {
+        roomChannel.send({
+          type: 'broadcast',
+          event: 'msg',
+          payload: { senderId: myUserId, senderName: myUsername, flag: myCountry, text: clean, time: msgTime }
+        });
+        roomChannel.send({
+          type: 'broadcast',
+          event: 'typing',
+          payload: { senderId: myUserId, senderName: myUsername, isTyping: false }
+        });
+      }
+    }
+
+    function leaveChat() {
+      animateScreenTransition(() => {
+        if (supabaseClient && roomChannel) {
+          roomChannel.send({ type: 'broadcast', event: 'peer_left', payload: { senderId: myUserId, senderName: myUsername } });
+          roomChannel.untrack();
+          roomChannel.unsubscribe();
+          roomChannel = null;
+        }
+        if (lobbyChannel) {
+          lobbyChannel.unsubscribe();
+          lobbyChannel = null;
+        }
+        isChatActive = false;
+        isSearching = false;
+        showScreen('screenDashboard');
+      });
+    }
+
+
+    // Global Lounge Chat Logic
+    function initGlobalLounge() {
+      if (supabaseClient && !globalLoungeChannel) {
+        globalLoungeChannel = supabaseClient.channel('public_global_lounge');
+        globalLoungeChannel
+          .on('broadcast', { event: 'lounge_msg' }, (payload) => {
+            const data = payload.payload;
+            if (data.senderId !== myUserId) {
+              const box = document.getElementById('globalMessagesBox');
+              const div = document.createElement('div');
+              div.className = "flex flex-col items-start space-y-1";
+              div.innerHTML = `
+                <div class="flex items-center space-x-1.5 text-[10px] text-slate-400">
+                  <span class="font-bold text-fuchsia-400">${escapeHtml(data.senderName)}</span>
+                  <span>${escapeHtml(data.country)}</span>
+                </div>
+                <div class="bg-slate-800 text-slate-100 border border-slate-700/80 px-4 py-2.5 rounded-2xl text-sm max-w-[80%]">
+                  ${escapeHtml(data.text)}
+                </div>
+              `;
+              box.appendChild(div);
+              box.scrollTop = box.scrollHeight;
+              playAudioTone('receive');
+            }
+          })
+          .subscribe();
+      }
+    }
+
+    function sendGlobalMessage(text) {
+      if (!text || !text.trim()) return;
+      const clean = text.trim();
+
+      const box = document.getElementById('globalMessagesBox');
+      const div = document.createElement('div');
+      div.className = "flex flex-col items-end space-y-1";
+      div.innerHTML = `
+        <div class="flex items-center space-x-1.5 text-[10px] text-slate-400">
+          <span class="font-bold text-fuchsia-400">${escapeHtml(myUsername)}</span>
+          <span>${escapeHtml(myCountry)}</span>
+        </div>
+        <div class="bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white px-4 py-2.5 rounded-2xl text-sm max-w-[80%]">
+          ${escapeHtml(clean)}
+        </div>
+      `;
+      box.appendChild(div);
+      box.scrollTop = box.scrollHeight;
+      playAudioTone('send');
+
+      if (globalLoungeChannel) {
+        globalLoungeChannel.send({
+          type: 'broadcast',
+          event: 'lounge_msg',
+          payload: { senderId: myUserId, senderName: myUsername, country: myCountry, text: clean }
+        });
+      }
+    }
+
+    // Render Saved Rooms Drawer
+    function renderSavedRoomsDrawer() {
+      const container = document.getElementById('savedRoomsContainer');
+      container.innerHTML = '';
+      const rooms = getSavedRooms();
+
+      if (rooms.length === 0) {
+        container.innerHTML = `<p class="text-xs text-slate-500 text-center py-4">No saved rooms yet. Create or join a private room to save it!</p>`;
+      } else {
+        rooms.forEach(r => {
+          const div = document.createElement('div');
+          div.className = "flex items-center justify-between p-3 rounded-2xl bg-slate-950 border border-slate-800 text-xs";
+          div.innerHTML = `
+            <div>
+              <h4 class="font-bold text-white">${escapeHtml(r.title)}</h4>
+              <p class="text-[10px] text-slate-500">ID: ${r.id}</p>
+            </div>
+            <div class="flex items-center space-x-2">
+              <button class="reenter-room-btn px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow">Re-enter</button>
+              <button class="delete-room-btn px-2.5 py-1.5 rounded-xl bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white font-bold text-xs border border-rose-500/30">🗑️</button>
+            </div>
+          `;
+          div.querySelector('.reenter-room-btn').addEventListener('click', () => {
+            document.getElementById('modalRoomsDrawer').classList.add('hidden');
+            animateScreenTransition(() => {
+              joinChatRoom(r.id, r.title, "🌐", 'private_room');
+            });
+          });
+          div.querySelector('.delete-room-btn').addEventListener('click', () => {
+            markRoomAsDeleted(r.id);
+            showToast("Room deleted from memory.");
+            renderSavedRoomsDrawer();
+          });
+          container.appendChild(div);
+        });
+      }
+    }
+
+    // Dom Event Listeners
+    window.addEventListener('DOMContentLoaded', () => {
+      let myTypingTimer = null;
+      let isMyTypingActive = false;
+      const chatInputEl = document.getElementById('chatInput');
+      if (chatInputEl) {
+        chatInputEl.addEventListener('input', () => {
+          if (!isChatActive || !roomChannel) return;
+          if (!isMyTypingActive) {
+            isMyTypingActive = true;
+            roomChannel.send({
+              type: 'broadcast',
+              event: 'typing',
+              payload: { senderId: myUserId, senderName: myUsername, isTyping: true }
+            });
+          }
+          clearTimeout(myTypingTimer);
+          myTypingTimer = setTimeout(() => {
+            isMyTypingActive = false;
+            if (roomChannel) {
+              roomChannel.send({
+                type: 'broadcast',
+                event: 'typing',
+                payload: { senderId: myUserId, senderName: myUsername, isTyping: false }
+              });
+            }
+          }, 2000);
+        });
+      }
+
+      initBackend();
+      populateCountrySelect();
+      openDoors(); // Ensure doors are fully open by default!
+
+      const detectedRoom = checkUrlForPrivateRoom();
+      const hasSavedProfile = loadSavedProfile();
+
+      // Destroyed Room Go Home Button
+      document.getElementById('btnDestroyedGoHome').addEventListener('click', () => {
+        window.location.hash = '';
+        animateScreenTransition(() => {
+          showScreen('screenDashboard');
+        });
+      });
+
+      // Avatar Selector
+      document.querySelectorAll('.avatar-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.avatar-btn').forEach(b => b.className = "avatar-btn p-2 rounded-lg hover:bg-slate-800");
+          btn.className = "avatar-btn p-2 rounded-lg bg-fuchsia-600 text-white shadow";
+          myAvatar = btn.getAttribute('data-avatar');
+        });
+      });
+
+      // Save Profile & Auto Route
+      const btnKnowUs = document.getElementById('btnOpenKnowUs');
+      if (btnKnowUs) {
+        btnKnowUs.addEventListener('click', () => {
+          showScreen('screenKnowUs');
+        });
+      }
+
+      const btnBackKnowUs = document.getElementById('btnBackFromKnowUs');
+      if (btnBackKnowUs) {
+        btnBackKnowUs.addEventListener('click', () => {
+          showScreen('screenDashboard');
+        });
+      }
+
+      const btnReturnKnowUs = document.getElementById('btnReturnHomeFromKnowUs');
+      if (btnReturnKnowUs) {
+        btnReturnKnowUs.addEventListener('click', () => {
+          showScreen('screenDashboard');
+        });
+      }
+
+      document.getElementById('btnEnterApp').addEventListener('click', () => {
+        const u = document.getElementById('inputUsername').value.trim();
+        const c = document.getElementById('selectCountry').value;
+
+        if (!u) {
+          showToast("Please enter a valid Nickname!", false);
+          return;
+        }
+
+        myUsername = u;
+        myCountry = c;
+        saveUserProfile(myUsername, myCountry, myAvatar);
+
+        document.getElementById('userNameLabel').innerText = myUsername;
+        document.getElementById('userCountryFlag').innerText = myCountry.split(' ').pop();
+        document.getElementById('userAvatarIcon').innerText = myAvatar;
+        document.getElementById('headerProfilePill').classList.remove('hidden');
+        document.getElementById('headerProfilePill').classList.add('flex');
+
+        renderCountryExplorer();
+
+        animateScreenTransition(() => {
+          if (pendingUrlRoomId && !isRoomDeleted(pendingUrlRoomId)) {
+            joinChatRoom(pendingUrlRoomId, "Private Room", "🌐", 'private_room');
+            showToast("Private Room Joined via Share Link!");
+          } else {
+            showScreen('screenDashboard');
+            showToast("Profile Saved! Welcome " + myUsername + ".");
+          }
+        });
+      });
+
+      // Auto-load profile
+      if (hasSavedProfile) {
+        document.getElementById('inputUsername').value = myUsername;
+        document.getElementById('selectCountry').value = myCountry;
+        document.getElementById('userNameLabel').innerText = myUsername;
+        document.getElementById('userCountryFlag').innerText = myCountry.split(' ').pop();
+        document.getElementById('userAvatarIcon').innerText = myAvatar;
+        document.getElementById('headerProfilePill').classList.remove('hidden');
+        document.getElementById('headerProfilePill').classList.add('flex');
+
+        renderCountryExplorer();
+
+        if (pendingUrlRoomId && !isRoomDeleted(pendingUrlRoomId)) {
+          joinChatRoom(pendingUrlRoomId, "Private Room", "🌐", 'private_room');
+          showToast("Private Room Joined via Share Link!");
+        } else {
+          showScreen('screenDashboard');
+        }
+      } else {
+        showScreen('screenOnboarding');
+      }
+
+      // Edit Profile
+      document.getElementById('btnEditProfile').addEventListener('click', () => showScreen('screenOnboarding'));
+
+      // Saved Rooms Drawer Modal
+      document.getElementById('btnOpenRoomsDrawer').addEventListener('click', () => {
+        renderSavedRoomsDrawer();
+        document.getElementById('modalRoomsDrawer').classList.remove('hidden');
+      });
+
+      document.getElementById('btnCloseRoomsDrawerModal').addEventListener('click', () => {
+        document.getElementById('modalRoomsDrawer').classList.add('hidden');
+      });
+
+      // Disconnected Banner Action Handlers
+      document.getElementById('btnAutoFindNext').addEventListener('click', () => {
+        leaveChat();
+        setTimeout(startFindStranger, 300);
+      });
+
+      document.getElementById('btnCancelGoHome').addEventListener('click', leaveChat);
+
+      // Delete Room Button Handler
+      document.getElementById('btnDeleteRoom').addEventListener('click', handleDeleteRoomByCreator);
+
+      // Private Room Creation & Copy Link
+      document.getElementById('btnCreatePrivateRoom').addEventListener('click', handleCreatePrivateRoom);
+      document.getElementById('btnClosePrivateModal').addEventListener('click', () => {
+        document.getElementById('modalPrivateRoom').classList.add('hidden');
+      });
+
+      document.getElementById('btnCopyPrivateLink').addEventListener('click', () => {
+        const input = document.getElementById('inputPrivateRoomUrl');
+        input.select();
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(input.value).then(() => showToast("Private Link Copied!")).catch(() => {
+            document.execCommand('copy');
+            showToast("Private Link Copied!");
+          });
+        } else {
+          document.execCommand('copy');
+          showToast("Private Link Copied!");
+        }
+      });
+
+      document.getElementById('btnCopyInRoomLink').addEventListener('click', () => {
+        const shareUrl = window.location.origin + window.location.pathname + "#room=" + currentRoomId;
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(shareUrl).then(() => showToast("Invite Link Copied!")).catch(() => {
+            showToast("Invite Link: " + shareUrl);
+          });
+        } else {
+          showToast("Invite Link: " + shareUrl);
+        }
+      });
+
+      document.getElementById('btnJoinMyPrivateRoom').addEventListener('click', () => {
+        document.getElementById('modalPrivateRoom').classList.add('hidden');
+        if (createdPrivateRoomId) {
+          animateScreenTransition(() => {
+            joinChatRoom(createdPrivateRoomId, "Private Room", "🌐", 'private_room');
+          });
+        }
+      });
+
+      // Dashboard Tabs
+      const tabMatch = document.getElementById('tabMatch');
+      const tabCountry = document.getElementById('tabCountry');
+      const tabGlobalLounge = document.getElementById('tabGlobalLounge');
+
+      const contentMatch = document.getElementById('contentMatch');
+      const contentCountry = document.getElementById('contentCountry');
+      const contentGlobalLounge = document.getElementById('contentGlobalLounge');
+
+      tabMatch.addEventListener('click', () => {
+        tabMatch.className = "px-4 py-3 border-b-2 border-fuchsia-400 text-fuchsia-400 font-bold text-xs md:text-sm transition flex items-center space-x-1.5 whitespace-nowrap";
+        tabCountry.className = "px-4 py-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 font-bold text-xs md:text-sm transition flex items-center space-x-1.5 whitespace-nowrap";
+        tabGlobalLounge.className = "px-4 py-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 font-bold text-xs md:text-sm transition flex items-center space-x-1.5 whitespace-nowrap";
+
+        contentMatch.classList.remove('hidden');
+        contentCountry.classList.add('hidden');
+        contentGlobalLounge.classList.add('hidden');
+      });
+
+      tabCountry.addEventListener('click', () => {
+        tabCountry.className = "px-4 py-3 border-b-2 border-fuchsia-400 text-fuchsia-400 font-bold text-xs md:text-sm transition flex items-center space-x-1.5 whitespace-nowrap";
+        tabMatch.className = "px-4 py-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 font-bold text-xs md:text-sm transition flex items-center space-x-1.5 whitespace-nowrap";
+        tabGlobalLounge.className = "px-4 py-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 font-bold text-xs md:text-sm transition flex items-center space-x-1.5 whitespace-nowrap";
+
+        contentCountry.classList.remove('hidden');
+        contentMatch.classList.add('hidden');
+        contentGlobalLounge.classList.add('hidden');
+      });
+
+      tabGlobalLounge.addEventListener('click', () => {
+        tabGlobalLounge.className = "px-4 py-3 border-b-2 border-fuchsia-400 text-fuchsia-400 font-bold text-xs md:text-sm transition flex items-center space-x-1.5 whitespace-nowrap";
+        tabMatch.className = "px-4 py-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 font-bold text-xs md:text-sm transition flex items-center space-x-1.5 whitespace-nowrap";
+        tabCountry.className = "px-4 py-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 font-bold text-xs md:text-sm transition flex items-center space-x-1.5 whitespace-nowrap";
+
+        contentGlobalLounge.classList.remove('hidden');
+        contentMatch.classList.add('hidden');
+        contentCountry.classList.add('hidden');
+
+        initGlobalLounge();
+      });
+
+      // Interest Selector
+      document.querySelectorAll('.tag-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.tag-btn').forEach(b => b.className = "tag-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700 hover:border-slate-500");
+          btn.className = "tag-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-fuchsia-600 text-white border border-fuchsia-400 shadow";
+          selectedInterest = btn.getAttribute('data-tag');
+        });
+      });
+
+      // Match Actions & Navigation
+      document.getElementById('btnStartFindStranger').addEventListener('click', startFindStranger);
+      document.getElementById('btnCancelSearch').addEventListener('click', leaveChat);
+      document.getElementById('btnToggleAutoTranslate').addEventListener('click', () => {
+        isAutoTranslateEnabled = !isAutoTranslateEnabled;
+        const txt = document.getElementById('txtAutoTranslateStatus');
+        if (txt) txt.innerText = isAutoTranslateEnabled ? "Translate: ON" : "Translate: OFF";
+        showToast(isAutoTranslateEnabled ? "🌐 Auto-Translate Enabled!" : "🌐 Auto-Translate Disabled!");
+      });
+      document.getElementById('btnLeaveChat').addEventListener('click', leaveChat);
+      document.getElementById('btnBackFromChat').addEventListener('click', leaveChat);
+      document.getElementById('btnNextStranger').addEventListener('click', () => {
+        leaveChat();
+        setTimeout(startFindStranger, 300);
+      });
+
+      // Submit Message
+      document.getElementById('btnAttachImage').addEventListener('click', () => {
+        document.getElementById('imageInput').click();
+      });
+
+      document.getElementById('imageInput').addEventListener('change', (e) => {
+        if (e.target.files && e.target.files[0]) {
+          compressAndSendImage(e.target.files[0]);
+          e.target.value = '';
+        }
+      });
+
+      document.getElementById('chatForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const input = document.getElementById('chatInput');
+        sendMessage(input.value);
+        input.value = '';
+      });
+
+      // Global Lounge Submit
+      document.getElementById('globalChatForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const input = document.getElementById('globalInput');
+        sendGlobalMessage(input.value);
+        input.value = '';
+      });
+
+      // Quick Chips
+      document.querySelectorAll('.quick-chip').forEach(chip => {
+        chip.addEventListener('click', () => sendMessage(chip.innerText));
+      });
+    });
+  </script>
+</body>
+</html>
